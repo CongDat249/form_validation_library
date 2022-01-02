@@ -33,44 +33,19 @@ function Validator(selector) {
       }
    }
 
-   function validate(inputEl, rules) {
-      const formGroup = inputEl.closest('.form-group');
-      const errorEl = formGroup.querySelector('.form-message');
-      let errorMessage;
-
-      if (!inputEl) return;
-      for (let i = 0; i < rules.length; i++) {
-         let pos = rules[i].search(':');
-         if (pos != -1) {
-            const rule = rules[i].substr(0, pos);
-            const parameter = rules[i].substr(pos + 1);
-            errorMessage = validatorRules[rule](inputEl.value, parameter);
-         }
-         else {
-            errorMessage = validatorRules[rules[i]](inputEl.value);
-         }
-
-         if (errorMessage) {
-            formGroup.classList.add("invalid");
-            errorEl.textContent = errorMessage;
-            return false;
-         } else {
-            formGroup.classList.remove("invalid");
-            errorEl.textContent = "";
-            errorEl.textContent = "";
-         }
-      }
-      return true;
-   }
+   const userRules = {};
 
    if (formEl) {
       inputEls = formEl.querySelectorAll('[name][rules]');
 
       inputEls.forEach((element) => {
-         let rules = element.getAttribute('rules').split('|');
-
+         const name = element.name;
+         const type = element.type;
+         const rules = element.getAttribute('rules').split('|');
+         userRules[name] = {type, rules};
+      
          element.onblur = function() {
-            validate(this, rules);
+            validate(name);
          }
 
          element.oninput = function() {
@@ -81,18 +56,79 @@ function Validator(selector) {
          }
       })
 
+      function getCheckedInputValue(inputEls) {
+         let values = [];
+         for (let i = 0; i < inputEls.length; i++) {
+            if (inputEls[i].checked) {
+               values.push(inputEls[i].value);
+            } 
+         }
+         return values.join(',');
+      }
+
+      function getInputValue(inputEls, type) {
+         switch (type) {
+            case 'radio':
+            case 'checkbox':
+               value = getCheckedInputValue(inputEls);
+               break;
+         
+            default:
+               value = inputEls[0].value;
+         }
+         return value;
+      }
+
+      function validate(name) {
+         const type = userRules[name].type;
+         const rules = userRules[name].rules; 
+         const inputEls = formEl.querySelectorAll(`[name=${name}]`);
+         const formGroup = inputEls[0].closest('.form-group');
+         const errorEl = formGroup.querySelector('.form-message');
+         let value = getInputValue(inputEls, type);
+         let errorMessage;
+
+         // Handle error
+         if (!inputEls) return;
+         for (let i = 0; i < rules.length; i++) {
+            let pos = rules[i].search(':');
+            if (pos != -1) {
+               const rule = rules[i].substr(0, pos);
+               const parameter = rules[i].substr(pos + 1);
+               errorMessage = validatorRules[rule](value, parameter);
+            }
+            else {
+               errorMessage = validatorRules[rules[i]](value);
+            }
+
+            if (errorMessage) {
+               formGroup.classList.add("invalid");
+               errorEl.textContent = errorMessage;
+               return false;
+            } else {
+               formGroup.classList.remove("invalid");
+               errorEl.textContent = "";
+               errorEl.textContent = "";
+            }
+         }
+         return true;
+      }
+
       formEl.onsubmit = function(e) {
          let isValid = true;
          e.preventDefault();
-         inputEls.forEach(element => {
-            let rules = element.getAttribute('rules').split('|');
-            if (!validate(element, rules)) isValid = false; 
-         })
+         for (const name in userRules) {
+            if (!validate(name)) isValid = false;
+         }
+
          if (isValid) {
-            let data = Array.from(inputEls).reduce(function(data, element) {
-               data[element.name] = element.value; 
-               return data;
-            }, {});
+            let data = {};
+            for (const name in userRules) {
+               const type = userRules[name].type;
+               const inputEls = formEl.querySelectorAll(`[name=${name}]`);
+               let value = getInputValue(inputEls, type);
+               data[name] = value;
+            }
             console.log(data);
          }
       }

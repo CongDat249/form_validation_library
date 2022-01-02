@@ -104,3 +104,38 @@ html {
 .spacer {
     margin-top: 36px;
 }
+
+.form-group_checked {
+    display: block;
+    text-align: left;
+}
+
+.input-group_checked {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 1px solid #b3b3b3;
+    border-radius: 3px;
+    padding: 5px;
+    gap: 10px;
+}
+
+input[type="radio"] {
+    display: inline-block;
+}
+
+.radio-label {
+    width: 100%;
+    font-size: 1.3rem;
+}
+
+/* Utilize */
+.flex {
+    display: flex;
+    gap: 10px;
+}
+
+.flex-col {
+    flex-direction: column;
+}
